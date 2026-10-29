@@ -7,7 +7,7 @@ namespace BlueUpdater.Tests;
 
 // A pretend SCM + pretend app. The "app" is whatever bytes sit in Application: a file containing
 // "v1.1.0.0 ok" behaves like a healthy 1.1.0.0, "v1.2.0.0 deny" like a build whose key is refused (403),
-// "v1.3.0.0 crash" restarts forever, "v1.4.0.0 latch" latches a 401. Anything else is an old build that
+// "v1.3.0.0 crash" restarts forever, "v1.4.0.0 latch" latches a 401, "cycle" finished a cycle with no api call (BluePunch with nothing to upload), "idle" proves nothing. Anything else is an old build that
 // writes no status file. Like the real SCM, a Disabled service cannot be started.
 public sealed class FakeHost : IServiceHost
 {
@@ -19,7 +19,7 @@ public sealed class FakeHost : IServiceHost
         public int Pid;
     }
 
-    private static readonly Regex Behaviour = new(@"v(\d+\.\d+\.\d+\.\d+) (ok|deny|crash|latch)", RegexOptions.Compiled);
+    private static readonly Regex Behaviour = new(@"v(\d+\.\d+\.\d+\.\d+) (ok|deny|crash|latch|cycle|idle)", RegexOptions.Compiled);
 
     public Dictionary<string, Svc> Services { get; } = new();
     public Dictionary<string, List<int>> ExternalProcesses { get; } = new(StringComparer.OrdinalIgnoreCase);
@@ -111,6 +111,7 @@ public sealed class FakeHost : IServiceHost
             ["updatedUtc"] = now,
             ["outlet"] = s.Info.Name,
             ["lastApiOkUtc"] = cur.Value.mode == "ok" ? now : null,
+            ["lastCycleOkUtc"] = cur.Value.mode == "cycle" ? now : null,
             ["lastDeniedCode"] = cur.Value.mode == "deny" ? 403 : cur.Value.mode == "latch" ? 401 : null,
             ["authLatched"] = cur.Value.mode == "latch",
             ["busy"] = false

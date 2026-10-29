@@ -107,3 +107,18 @@ ACL application, DPAPI, real printing — see "Bench test" below.
 3. Publish a higher version, upload as canary for the test company, `--check --force`; watch the log.
 4. Try: a build that returns 403 (expect rollback), kill the updater mid-swap and reboot (expect recovery),
    open the exe by hand (expect deferral), print a real bill during an update (expect deferral / no lost job).
+
+## BluePunch (product `bluepunch`)
+
+BluePunch 1.1.0.0 (repo `C:\WS\Dotnet\BluePunch`) writes the same status file and carries its position over from
+the old `lastRecord.txt`. It only calls the api when the device holds new punches, so its status file also
+carries `lastCycleOkUtc` ("a cycle ran without trouble"), which the updater accepts as proof of life (a 401/403
+still counts against it). The COM reference needs Visual Studio's MSBuild, so build it from VS, then:
+
+```
+BlueRelease pack --product bluepunch --version 1.1.1.0 --src <publish or bin\Release\net8.0 folder> --exe BluePunch.exe `
+   --exclude "*.zip" --exclude "publish/**" --key <primary key> --out <folder>
+```
+Before the first update on a site: confirm the deployed build (hash of `BluePunch.dll`), that its api key is a
+`service`/`token` key, that NSSM's `AppDirectory` is the exe folder, and the COM bitness (this dev PC only has
+the 32-bit `zkemkeeper.dll` registered in SysWOW64, so do **not** assume x64).

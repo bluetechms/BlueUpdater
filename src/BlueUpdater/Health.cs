@@ -13,6 +13,8 @@ public sealed class AppStatusFile
     public DateTime? StartedUtc { get; init; }
     public DateTime? UpdatedUtc { get; init; }
     public DateTime? LastApiOkUtc { get; init; }
+    // Apps that only call the api when there is work (BluePunch) also report "a cycle ran without trouble".
+    public DateTime? LastCycleOkUtc { get; init; }
     public int? LastDeniedCode { get; init; }
     public bool AuthLatched { get; init; }
     public bool Busy { get; init; }
@@ -37,6 +39,7 @@ public sealed class AppStatusFile
                     StartedUtc = Time(r, "startedUtc"),
                     UpdatedUtc = Time(r, "updatedUtc"),
                     LastApiOkUtc = Time(r, "lastApiOkUtc"),
+                    LastCycleOkUtc = Time(r, "lastCycleOkUtc"),
                     LastDeniedCode = Int(r, "lastDeniedCode"),
                     AuthLatched = Bool(r, "authLatched"),
                     Busy = Bool(r, "busy"),
@@ -152,12 +155,15 @@ public sealed class HealthChecker
                             { statusOk = false; lastWhy = $"status file reports version {st.Version}, expected {expectedVersion}"; break; }
                         if (st.AuthLatched)
                             return new HealthResult(HealthVerdict.Unhealthy, "app latched an authentication failure (401)");
-                        if (st.LastApiOkUtc == null || st.StartedUtc == null || st.LastApiOkUtc < st.StartedUtc)
+                        var apiProven = st.StartedUtc != null && st.LastApiOkUtc != null && st.LastApiOkUtc >= st.StartedUtc;
+                        var cycleProven = st.StartedUtc != null && st.LastCycleOkUtc != null && st.LastCycleOkUtc >= st.StartedUtc
+                                          && st.LastDeniedCode == null;
+                        if (!apiProven && !cycleProven)
                         {
                             statusOk = false;
                             lastWhy = st.LastDeniedCode != null
                                 ? $"api answered {st.LastDeniedCode} and no call has succeeded"
-                                : "no successful api call yet";
+                                : "no successful api call or completed cycle yet";
                             break;
                         }
                     }

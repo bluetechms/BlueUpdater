@@ -122,6 +122,21 @@ public class ApplierTests : IDisposable
     }
 
     [Fact]
+    public async Task A_completed_cycle_with_nothing_to_upload_counts_as_healthy()
+    {
+        var result = await Apply("1.5.0.0", "v1.5.0.0 cycle");
+        Assert.Equal(ApplyOutcome.Updated, result.Outcome);
+    }
+
+    [Fact]
+    public async Task A_build_that_proves_nothing_is_rolled_back_when_the_api_is_reachable()
+    {
+        var result = await Apply("1.6.0.0", "v1.6.0.0 idle");
+        Assert.Equal(ApplyOutcome.RolledBack, result.Outcome);
+        Assert.Equal(OldExe, Read("App.exe"));
+    }
+
+    [Fact]
     public async Task Crash_looping_build_is_rolled_back()
     {
         var result = await Apply("1.3.0.0", "v1.3.0.0 crash");

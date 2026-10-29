@@ -28,6 +28,19 @@ public class StatusContractTests
     }
 
     [Fact]
+    public void Reads_the_status_file_the_real_bluepunch_writes()
+    {
+        using var d = new TempDir();
+        File.Copy(Path.Combine(AppContext.BaseDirectory, "Fixtures", "bluepunch-status.sample.json"),
+            Path.Combine(d.Path, "bluepunch_Dev-1.json"));
+
+        var s = Assert.Single(AppStatusFile.ReadAll(d.Path, "bluepunch"));
+        Assert.Equal("1.1.0.0", s.Version);
+        Assert.Null(s.LastApiOkUtc);
+        Assert.NotNull(s.LastCycleOkUtc);
+    }
+
+    [Fact]
     public void Other_products_and_junk_files_are_ignored()
     {
         using var d = new TempDir();
