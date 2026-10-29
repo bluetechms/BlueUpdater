@@ -1,0 +1,10 @@
+bin/
+obj/
+publish/
+*.user
+.vs/
+# Signing private keys must never be committed
+*.pfx
+*.pem
+*.key
+signing-*.xml

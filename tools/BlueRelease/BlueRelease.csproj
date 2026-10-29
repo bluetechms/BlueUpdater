@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>BlueRelease</RootNamespace>
+    <AssemblyName>BlueRelease</AssemblyName>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <!-- Reuses the updater's own manifest model, path rules and verifier, so the tool and the updater cannot
+       disagree about the format. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\BlueUpdater\BlueUpdater.csproj" />
+  </ItemGroup>
+
+</Project>
