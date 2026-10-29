@@ -47,6 +47,9 @@ public sealed class ApplierOptions
     public Func<string, bool> IsWritableByBroadGroups { get; init; } = Acl.IsWritableByBroadGroups;
     public bool CheckDiskSpace { get; init; } = true;
     public int KeepRollbackCopies { get; init; } = 2;
+    // Desktop apps have no status file; after the swap the exe's own file version is the check.
+    public Func<string, string?> ReadFileVersion { get; init; } =
+        path => VersionUtil.Normalize(System.Diagnostics.FileVersionInfo.GetVersionInfo(path).FileVersion);
 }
 
 public sealed class UpdateApplier
@@ -216,6 +219,23 @@ public sealed class UpdateApplier
     {
         journal.Phase = "verifying";
         WriteJournal(journal);
+
+        // A desktop app is started by its user, not by us: there is nothing to watch. Make sure what is on disk
+        // really is the new version, and leave the rest to the next launch.
+        if (services.All(s => s.Gui))
+        {
+            foreach (var s in services) _host.SetStartType(s.Name, journal.StartTypes[s.Name]);
+            string? found = null;
+            try { found = _opt.ReadFileVersion(services[0].Application); } catch { /* unreadable: treated as a mismatch */ }
+            if (VersionUtil.Compare(found, journal.ToVersion) == 0 && found != null)
+            {
+                DeleteJournal();
+                PruneRollback(journal.Product);
+                return new(ApplyOutcome.Updated, "files replaced; the app starts the new version on its next launch");
+            }
+            return await RollbackAsync(cfg, services, journal, $"the installed exe reports {found ?? "no version"}, expected {journal.ToVersion}", ct);
+        }
+
         var healthOpt = new HealthOptions
         {
             StableFor = TimeSpan.FromMinutes(cfg.HealthStableMinutes),
@@ -258,6 +278,8 @@ public sealed class UpdateApplier
         WriteJournal(journal);
         var ok = await RestoreAsync(journal, ct);
         if (!ok) return new(ApplyOutcome.RolledBack, "rollback was incomplete: " + why);
+
+        if (services.All(s => s.Gui)) return new(ApplyOutcome.RolledBack, why);
 
         // The previous build may predate the status file, so only process stability can be judged.
         var opt = new HealthOptions

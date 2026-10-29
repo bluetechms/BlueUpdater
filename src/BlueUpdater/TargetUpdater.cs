@@ -30,7 +30,7 @@ public sealed class TargetUpdater
         _now = localNow ?? (() => DateTime.Now);
     }
 
-    public static string InstanceName(TargetConfig t) => string.Join(",", t.Services).Truncate(80);
+    public static string InstanceName(TargetConfig t) => string.Join(",", t.EffectiveServices()).Truncate(80);
 
     // `force` ignores the quiet window and the busy check (technician testing on a bench PC).
     public async Task RunAsync(TargetConfig target, UpdaterState state, bool force, CancellationToken ct)
@@ -39,7 +39,7 @@ public sealed class TargetUpdater
         var instance = InstanceName(target);
 
         var services = new List<ServiceInfo>();
-        foreach (var name in target.Services)
+        foreach (var name in target.EffectiveServices())
         {
             var info = _host.Discover(name);
             if (info == null)

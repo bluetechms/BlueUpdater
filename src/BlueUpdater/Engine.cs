@@ -21,13 +21,20 @@ public sealed class Engine
         var key = cfg.ApiKey;
         if (string.IsNullOrEmpty(key)) return null;
 
-        var host = new WindowsServiceHost();
+        var host = BuildHost(cfg);
         var api = new UpdateApi(cfg.ApiBase, key, Environment.MachineName, Runtime.UpdaterVersion);
         var verifier = new ManifestVerifier(ManifestVerifier.LoadEmbeddedKeys(), Runtime.UpdaterVersion);
         var health = new HealthChecker(host, paths, log);
         var applier = new UpdateApplier(host, paths, health, ct => api.ReachableAsync(ct), log);
         var updater = new TargetUpdater(cfg, paths, host, api, verifier, applier, log, Runtime.UpdaterVersion);
         return new Engine { Updater = updater, Applier = applier, DataPaths = paths };
+    }
+
+    // Real service manager, plus the virtual "gui:" services for desktop-app targets.
+    public static IServiceHost BuildHost(UpdaterConfig cfg)
+    {
+        var real = new WindowsServiceHost();
+        return new CompositeServiceHost(real, new GuiHost(real, cfg.Targets));
     }
 
     // Finish or undo a swap that a crash or power cut interrupted, and record the outcome.

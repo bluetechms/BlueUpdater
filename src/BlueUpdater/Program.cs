@@ -50,13 +50,13 @@ internal static class Cli
         var cfg = UpdaterConfig.Load(paths);
         Console.WriteLine($"Api: {cfg.ApiBase}  key: {(cfg.ApiKey == null ? "MISSING/unreadable" : "set")}");
         Console.WriteLine($"Quiet window (local hours): {(cfg.WindowStartHour == cfg.WindowEndHour ? "any time" : cfg.WindowStartHour + "-" + cfg.WindowEndHour)}");
-        var host = new WindowsServiceHost();
+        var host = Engine.BuildHost(cfg);
         var state = UpdaterState.Load(paths);
         foreach (var t in cfg.Targets)
         {
             var ps = state.For(t.Product);
             Console.WriteLine($"- {t.Product}  failed version: {ps.FailedVersion ?? "none"}  last status: {ps.LastReportedStatus ?? "-"}");
-            foreach (var s in t.Services)
+            foreach (var s in t.EffectiveServices())
             {
                 var info = host.Discover(s);
                 string v = "?";

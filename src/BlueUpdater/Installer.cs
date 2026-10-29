@@ -21,11 +21,13 @@ public static class Installer
 
         var apiKey = Arg(args, "--api-key");
         var targetArgs = Args(args, "--target");
-        if (string.IsNullOrWhiteSpace(apiKey) || targetArgs.Count == 0)
+        var guiArgs = Args(args, "--gui-target");
+        if (string.IsNullOrWhiteSpace(apiKey) || (targetArgs.Count == 0 && guiArgs.Count == 0))
         {
             Console.Error.WriteLine("Usage: BlueUpdater.exe --install --api-key <service key> --target <product>:<Service>[,<Service>...] [--target ...]");
             Console.Error.WriteLine("                       [--api-base https://api.bluehms.com/api] [--window 3-6|any] [--no-restart]");
             Console.Error.WriteLine("Example: --target printing-outlet:BluePrinting");
+            Console.Error.WriteLine("Desktop app (not a service): --gui-target bluemicrotik=\"C:\\Program Files\\BlueMicroTik\\BlueMicroTik.exe\"");
             return 2;
         }
 
@@ -40,6 +42,21 @@ public static class Installer
                 return 2;
             }
             targets.Add(new TargetConfig { Product = parts[0], Services = parts[1].Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList() });
+        }
+
+        foreach (var g in guiArgs)
+        {
+            var parts = g.Split('=', 2);
+            if (parts.Length != 2 || parts[0].Length == 0 || !Path.IsPathRooted(parts[1]) || !File.Exists(parts[1]))
+            {
+                Console.Error.WriteLine($"Bad --gui-target '{g}': expected product=<full path of an existing exe> (install the app first).");
+                return 2;
+            }
+            targets.Add(new TargetConfig { Product = parts[0], GuiExe = parts[1] });
+            Console.WriteLine($"  {parts[0]}: desktop app {parts[1]}");
+            var dir = Path.GetDirectoryName(parts[1])!;
+            if (Acl.IsWritableByBroadGroups(dir))
+                Console.WriteLine($"  WARNING: '{dir}' can be modified by ordinary users. Updates to it will be REFUSED until its permissions are tightened.");
         }
 
         // Discover before changing anything, so a typo in a service name fails early.

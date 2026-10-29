@@ -10,6 +10,12 @@ public sealed class TargetConfig
 {
     public string Product { get; set; } = "";
     public List<string> Services { get; set; } = new();
+
+    // A desktop app instead of NSSM services: the full path of its exe (see GuiHost).
+    public string? GuiExe { get; set; }
+
+    public List<string> EffectiveServices() =>
+        string.IsNullOrEmpty(GuiExe) ? Services : new List<string> { GuiHost.NameFor(Product) };
 }
 
 // %ProgramData%\BlueHMS\updater\updater.json. The folder is SYSTEM/Administrators only. The api key is

@@ -9,7 +9,7 @@ namespace BlueUpdater;
 
 // What the updater needs to know about one NSSM-wrapped service. Read from
 // HKLM\SYSTEM\CurrentControlSet\Services\<name>\Parameters, never assumed.
-public sealed record ServiceInfo(string Name, string Application, string AppDirectory, string? RunAs)
+public sealed record ServiceInfo(string Name, string Application, string AppDirectory, string? RunAs, bool Gui = false)
 {
     public string InstallDir => Path.GetDirectoryName(Application) ?? AppDirectory;
 }

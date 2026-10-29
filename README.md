@@ -78,7 +78,7 @@ updater self-update: losing both private keys, or a leaked key, means visiting t
 
 Each release:
 ```
-.\scripts\publish-printing-release.ps1 -Version 1.1.1.0 -KeyPath D:\secure\bluehms-signing\primary.private.pk8.b64 `
+.\scripts\publish-client-release.ps1 -Product printing-outlet -Version 1.1.1.0 -KeyPath D:\secure\bluehms-signing\primary.private.pk8.b64 `
     -Upload -Canary "<company ids>" -Notes "what changed"
 BlueRelease list  --api https://api.bluehms.com/api                       (find the release id)
 BlueRelease state --api ... --id 7 --active true --canary "12,34"        (canary hotels first)
@@ -122,3 +122,16 @@ BlueRelease pack --product bluepunch --version 1.1.1.0 --src <publish or bin\Rel
 Before the first update on a site: confirm the deployed build (hash of `BluePunch.dll`), that its api key is a
 `service`/`token` key, that NSSM's `AppDirectory` is the exe folder, and the COM bitness (this dev PC only has
 the 32-bit `zkemkeeper.dll` registered in SysWOW64, so do **not** assume x64).
+
+## BlueMicroTik (product `bluemicrotik`, desktop app)
+
+Not a service, so there is nothing to stop or start. Install the app once by unzipping a release package into
+`C:\Program Files\BlueMicroTik`, then register it:
+
+```
+BlueUpdater.exe --install --api-key <key> --gui-target bluemicrotik="C:\Program Files\BlueMicroTik\BlueMicroTik.exe"
+```
+The update waits while the exe is running in **any** Windows session (it is retried every few minutes inside the
+quiet window), replaces the files, and checks that the exe now reports the released version; a mismatch is rolled
+back. Settings and plans are per-user in `%AppData%\BlueMicroTik` and are never touched. There is no status file:
+success means "the files on disk are the signed release".
